@@ -422,7 +422,7 @@ class Sm100UmmaHeuristics(DeviceHeuristics):
     @classmethod
     def _select_dequant_warpgroups(cls, layer_config, shape_m, config):
         # Native conversion keeps up with one warpgroup; register dequantization does not.
-        if layer_config.use_raw_weight or layer_config.use_native_dequant:
+        if layer_config.use_raw_weight or layer_config.use_flat_weight or layer_config.use_native_dequant:
             return config
         # Aligned integers convert to FP16/BF16 with one logic op and one subtraction.
         a_dtype, b_dtype = layer_config.a_dtype, layer_config.b_dtype
@@ -512,7 +512,8 @@ class Sm100UmmaHeuristics(DeviceHeuristics):
                         # For a single short wave, cp.async avoids TMA setup
                         # without sacrificing overlap across persistent tiles.
                         is_short_wave = output_tiles <= resident_ctas and k_iters <= num_stages
-                        use_tma = layer_config.use_raw_weight or not is_short_wave
+                        use_tma = layer_config.use_raw_weight or layer_config.use_flat_weight
+                        use_tma |= not is_short_wave
                         config = {
                             "mma_type": MmaType.UMMA.value,
                             "block_shape": block_shape,

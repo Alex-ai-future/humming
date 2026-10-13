@@ -79,7 +79,7 @@ def _is_legal_mma_type(layer_config, compute_config, mma_type):
         dtypes.float16: 75,
         dtypes.bfloat16: 80,
         dtypes.int8: 75,
-        dtypes.int4: 80,
+        dtypes.int4: 75,
         dtypes.float8e4m3: 89,
         dtypes.float8e5m2: 89,
         dtypes.float8e3m4: 120,

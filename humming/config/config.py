@@ -18,6 +18,7 @@ from humming.config.enum import (
     WeightScaleType,
 )
 from humming.device import DeviceInfo, current_device
+from humming.utils.cubin import is_cubin_patch_enabled
 from humming.utils.math import round_up
 
 
@@ -81,6 +82,7 @@ class LayerConfig(BaseHummingConfig):
         "is_tensor_input_scale_2",
         "use_raw_weight",
         "use_flat_weight",
+        "use_ldmatrix_dequant",
         "use_native_dequant",
         "use_block_scaled_mma",
         "mma_scale_group_size",
@@ -131,6 +133,22 @@ class LayerConfig(BaseHummingConfig):
         return use_f16_umma or use_fp8_umma or use_fp4_umma or use_int8_umma
 
     @property
+    def use_ldmatrix_dequant(self):
+        has_int4_weight = self.a_dtype == dtypes.int8 and self.b_dtype in (dtypes.int4, dtypes.uint4)
+        has_int2_weight = self.a_dtype == dtypes.int4 and self.b_dtype in (dtypes.int2, dtypes.uint2)
+        has_supported_device = self.sm_version >= 75 and not current_device.is_ppu
+        if not has_supported_device or self.has_zero_point or not (has_int4_weight or has_int2_weight):
+            return False
+        if is_cubin_patch_enabled():
+            return True
+        if not has_int4_weight or self.sm_version < 90:
+            return False
+
+        from humming.jit.runtime import KernelRuntime
+
+        return _cuda_compiler_version(KernelRuntime._get_compiler()) >= (13, 4)
+
+    @property
     def use_raw_weight(self):
         if self.a_dtype.num_bits == self.b_dtype.num_bits:
             return self.is_umma_supported or current_device.is_ppu
@@ -148,6 +166,8 @@ class LayerConfig(BaseHummingConfig):
 
     @property
     def use_flat_weight(self):
+        if self.use_ldmatrix_dequant:
+            return True
         has_same_width = self.a_dtype.num_bits == self.b_dtype.num_bits
         return has_same_width and not self.is_umma_supported and not current_device.is_ppu
 
