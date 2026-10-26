@@ -66,6 +66,14 @@ The activation scale and weight scale types, respectively. For group quantizatio
 - `bs_dtype` defaults to `c_dtype`. Low-precision scales must satisfy both quantization format and backend requirements.
 - Block-scaled paths that use both activation and weight group scales require matching scale data types.
 
+The current supported dtype combinations have additional restrictions:
+
+- `c_dtype` must be `float16` or `bfloat16`.
+- A 16-bit activation requires the same output dtype and, when a 16-bit weight scale is used, the same scale dtype. An 8-bit or FP32 weight scale is not subject to this restriction.
+- A `float8e5m2` activation currently requires `bfloat16` output.
+
+`LayerConfig` rejects unsupported combinations with a `ValueError`. Schema compatibility checks return `False` for the same combinations, so callers can reject them before compilation or execution.
+
 Scale dtype does not directly determine output dtype. Reducing scale bit width saves scale storage, but also changes the representable range and quantization error.
 
 ### Input Quantization

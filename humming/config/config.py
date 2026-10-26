@@ -17,6 +17,7 @@ from humming.config.enum import (
     WeightScale2Type,
     WeightScaleType,
 )
+from humming.config.mma import get_dtype_compatibility_error
 from humming.device import DeviceInfo, current_device
 from humming.utils.cubin import is_cubin_patch_enabled
 from humming.utils.math import round_up
@@ -324,6 +325,9 @@ class LayerConfig(BaseHummingConfig):
         assert self.has_input_scale == (self.a_dtype.num_bits != 16)
         assert self.is_group_input_scale == (self.input_scale_group_size > 0)
         self.bs_dtype = self.bs_dtype or self.c_dtype
+        dtype_compatibility_error = get_dtype_compatibility_error(self.a_dtype, self.c_dtype, self.bs_dtype)
+        if dtype_compatibility_error is not None:
+            raise ValueError(dtype_compatibility_error)
 
         if isinstance(self.b_dtype, dtypes.IntegerType):
             if isinstance(self.a_dtype, dtypes.FloatingPointType):
