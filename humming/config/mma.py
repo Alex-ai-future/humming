@@ -46,6 +46,29 @@ UNDOCUMENTED_FP_DTYPES = (dtypes.float8e3m4, dtypes.float4e0m3)
 UNDOCUMENTED_FP_SM_VERSIONS = (100, 103, 120, 121)
 
 
+def get_dtype_compatibility_error(
+    a_dtype: dtypes.DataType,
+    c_dtype: dtypes.DataType,
+    bs_dtype: dtypes.DataType,
+) -> str | None:
+    supported_output_dtypes = (dtypes.float16, dtypes.bfloat16)
+    if c_dtype not in supported_output_dtypes:
+        return f"c_dtype must be float16 or bfloat16, got {c_dtype}"
+
+    is_16_bit_activation = a_dtype.num_bits == 16
+    if is_16_bit_activation and a_dtype != c_dtype:
+        return f"16-bit a_dtype {a_dtype} requires matching c_dtype, got {c_dtype}"
+
+    if a_dtype == dtypes.float8e5m2 and c_dtype != dtypes.bfloat16:
+        return f"float8e5m2 a_dtype requires bfloat16 c_dtype, got {c_dtype}"
+
+    has_16_bit_weight_scale = bs_dtype.num_bits == 16
+    if is_16_bit_activation and has_16_bit_weight_scale and bs_dtype != a_dtype:
+        return f"16-bit a_dtype {a_dtype} requires matching bs_dtype, got {bs_dtype}"
+
+    return None
+
+
 def supports_undocumented_fp_dtypes(sm_version: int) -> bool:
     return is_cubin_patch_enabled() and sm_version in UNDOCUMENTED_FP_SM_VERSIONS
 

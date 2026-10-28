@@ -56,7 +56,11 @@ The activation and weight types used by the GEMM kernel, respectively. They affe
 
 #### `c_dtype`
 
-The output type: `float16` or `bfloat16`. This is separate from accumulator precision; FP16 output does not imply FP16 intermediate accumulation.
+The output type: `float16` or `bfloat16`. 
+
+A 16-bit activation requires the same output dtype. A `float8e5m2` activation currently requires `bfloat16` output.
+
+This is separate from accumulator precision; FP16 output does not imply FP16 intermediate accumulation.
 
 #### `as_dtype`, `bs_dtype`
 

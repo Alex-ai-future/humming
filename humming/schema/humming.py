@@ -6,7 +6,12 @@ import torch
 from humming import dtypes, ops
 from humming.config import InputQuantizationMode
 from humming.config.enum import WeightScale2Type, WeightScaleType
-from humming.config.mma import get_mma_b_dtype, supports_undocumented_fp_dtypes, uses_undocumented_fp_operand
+from humming.config.mma import (
+    get_dtype_compatibility_error,
+    get_mma_b_dtype,
+    supports_undocumented_fp_dtypes,
+    uses_undocumented_fp_operand,
+)
 from humming.device import current_device
 from humming.schema.base import BaseInputSchema, BaseWeightSchema
 from humming.utils.weight import decode_e5m3_scale, dequantize_weight, quantize_weight
@@ -482,6 +487,11 @@ def is_humming_schema_compatible(
     a_dtype = input_schema.a_dtype or dtypes.DataType.from_torch_dtype(param_dtype)
     b_dtype = weight_schema.b_dtype
     bs_dtype = weight_schema.bs_dtype or dtypes.DataType.from_torch_dtype(param_dtype)
+    c_dtype = dtypes.DataType.from_torch_dtype(param_dtype)
+    dtype_compatibility_error = get_dtype_compatibility_error(a_dtype, c_dtype, bs_dtype)
+    if dtype_compatibility_error is not None:
+        return False
+
     has_zero_point = weight_schema.has_zero_point
     is_e0m_weight = b_dtype.is_floating_point_type and b_dtype.exponent_bits == 0
     if a_dtype.is_integer_type and is_e0m_weight:
