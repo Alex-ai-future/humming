@@ -233,12 +233,13 @@ def test_fp4_weight_schema_compatibility(
     if a_dtype == "float8e3m4" and sm_version in (100, 103):
         has_supported_scales = group_size == 32 and bs_dtype == "float8e8m0"
     resolved_bs_dtype = dtypes.DataType.from_str(bs_dtype) if bs_dtype is not None else dtypes.bfloat16
-    has_supported_dtypes = (
-        get_dtype_compatibility_error(activation_dtype, dtypes.bfloat16, resolved_bs_dtype) is None
-    )
-    is_supported = (
-        has_supported_groups and has_supported_dtype and has_supported_scales and has_supported_dtypes
-    )
+    dtype_error = get_dtype_compatibility_error(activation_dtype, dtypes.bfloat16, resolved_bs_dtype)
+    is_supported = all([
+        has_supported_groups,
+        has_supported_dtype,
+        has_supported_scales,
+        dtype_error is None
+    ])
     assert inputs.is_compatible_with(weight, torch.bfloat16) == is_supported
 
 
